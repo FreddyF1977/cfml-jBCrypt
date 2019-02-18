@@ -39,8 +39,8 @@ component displayname="jBCrypt" output="false" hint="Generate hash with jBCrypt"
 	* @inString The string that will be hashed
 	*/	
 	public string function salt(required string inString) {
-       //Don't reverse this, the most important bytes should be FIRST, the rest is padding for weak password
-       return arguments.inString & variables.StoredSalt;
+        //Don't reverse this, the most important bytes should be FIRST, the rest is padding for weak password
+        return arguments.inString & variables.StoredSalt;
 	}
 
 	/**
