@@ -14,7 +14,7 @@ component displayname="jBCrypt" output="false" hint="Generate hash with jBCrypt"
 	* @inPasswordToHash The string that will be hashed
 	* @inBCryptWorkFactor object, binary or string 
 	*/	
-	public string function hashps(required string inPasswordToHash, numeric inBCryptWorkFactor = 10) {
+	public string function hashpw(required string inPasswordToHash, numeric inBCryptWorkFactor = 10){
         var passwordToHash = salt(arguments.inPasswordToHash);
 
         if (isValid("integer", arguments.inBCryptWorkFactor) && arguments.inBCryptWorkFactor GTE 10){
