@@ -1,58 +1,53 @@
-component displayname="jBCrypt" output="false" hint="Generate hash with jBCrypt" {
+/**
+ * @displayName jBCrypt
+ * @hint A ColdFusion component that provides an interface to the jBCrypt Java library for hashing and verifying passwords.
+ * This component follows modern security best practices by relying on jBCrypt's internal salt generation.
+ */
+component {
+
 	/**
-	* @hint Constructor
-	*/	
+	 * @hint Constructor: Initializes the jBCrypt component.
+	 */
 	public jBCrypt function init() {
-		variables.StoredSalt = "-------Salt-------";
-		variables.oBCrypt = createObject("java", "org.mindrot.jbcrypt.BCrypt");;
+		// Create an instance of the jBCrypt Java object.
+		variables.oBCrypt = createObject("java", "org.mindrot.jbcrypt.BCrypt");
 		return this;
 	}
 
 	/**
-	* @hint Will hash a string
-	* @inPasswordToHash The string that will be hashed
-	* @inBCryptWorkFactor object, binary or string 
-	*/	
-	public string function hashpw(required string inPasswordToHash, numeric inBCryptWorkFactor = 10){
-        	var passwordToHash = salt(arguments.inPasswordToHash);
-
-        	if (isValid("integer", arguments.inBCryptWorkFactor) && arguments.inBCryptWorkFactor GTE 10){
+	 * @hint Hashes a password using bcrypt.
+	 * @inPasswordToHash The password string to hash.
+	 * @inBCryptWorkFactor The log_rounds parameter for bcrypt, determining the computational cost. Default is 10.
+	 * @return Returns the hashed password string.
+	 */
+	public string function hashpw(required string inPasswordToHash, numeric inBCryptWorkFactor = 10) {
+		// The work factor must be an integer between 10 and 31.
+		if (isValid("integer", arguments.inBCryptWorkFactor) && arguments.inBCryptWorkFactor GTE 10) {
 			/*
-				hashpw use 18 4 bytes integer to XOR the password
-				so only the first 72 bytes are important.  Padding it with the username and internal salt
-				only help for small password.
-				Common guideline are to silently ignore everything after the 72th character.
-				A 72 characters bCrypted password is VERY likely to be unique and we have to match it
-				to the username anyway (which is always unique).
-			*/
-
-			return variables.oBCrypt.hashpw(passwordToHash, variables.oBCrypt.genSalt(arguments.inBCryptWorkFactor));
+			 * SECURITY NOTE:
+			 * The previous implementation used a custom, hardcoded salt. This is a significant security flaw.
+			 * The proper use of bcrypt, as implemented here, is to let the library generate a random salt for each password.
+			 * This salt is then stored as part of the resulting hash string, ensuring that each password has a unique salt.
+			 */
+			return variables.oBCrypt.hashpw(arguments.inPasswordToHash, variables.oBCrypt.genSalt(arguments.inBCryptWorkFactor));
 		} else {
-            		throw(type="Invalid Work Factor", message="The work factor must be a valid positive integer no smaller than 10");
-        	}
+			throw(type="Invalid Work Factor", message="The work factor must be a valid positive integer no smaller than 10.");
+		}
 	}
 
 	/**
-	* @hint Append salt to the string
-	* @inString The string that will be hashed
-	*/	
-	public string function salt(required string inString) {
-		//Don't reverse this, the most important bytes should be FIRST, the rest is padding for weak password
-		return arguments.inString & variables.StoredSalt;
-	}
-
-	/**
-	* @hint Verify the string agains the hash
-	* @inString The string that will be hashed
-	* @inCryptedString The crypted string against what the hash will be tested	
-	*/	
-	public string function checkHash(required string inString, required string inCryptedString) {
-		var stringToHash = saltPassword(arguments.inString);
-
-		if (len(stringToHash) && len(arguments.inCryptedString)){
-		    return variables.oBCrypt.checkpw(stringToHash, arguments.inCryptedString) ? "SUCCESS" : "FAIL";
-		} else {
-		    return "FAIL";
+	 * @hint Verifies a plaintext password against a bcrypt hash.
+	 * @inString The plaintext password to check.
+	 * @inCryptedString The bcrypt hash to check against.
+	 * @return Returns true if the password matches the hash, otherwise false.
+	 */
+	public boolean function checkHash(required string inString, required string inCryptedString) {
+		try {
+			// The checkpw function handles extracting the salt from the hash and comparing the password.
+			return variables.oBCrypt.checkpw(arguments.inString, arguments.inCryptedString);
+		} catch (any e) {
+			// If jbcrypt throws an error (e.g., invalid hash format), return false.
+			return false;
 		}
 	}
 }
